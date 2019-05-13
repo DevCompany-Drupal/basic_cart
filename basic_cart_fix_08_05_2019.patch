@@ -1,0 +1,886 @@
+diff --git a/basic_cart.module b/basic_cart.module
+index efc0678..6a303aa 100755
+--- a/basic_cart.module
++++ b/basic_cart.module
+@@ -5,15 +5,18 @@
+  * Basic cart module file.
+  */
+ 
++use Drupal\Component\Utility\Html;
+ use Drupal\Core\Access\AccessResult;
++use Drupal\Core\Ajax\AjaxResponse;
++use Drupal\Core\Ajax\HtmlCommand;
++use Drupal\Core\Ajax\OpenModalDialogCommand;
++use Drupal\Core\Ajax\ReplaceCommand;
+ use Drupal\Core\Form\FormStateInterface;
+ use Drupal\Core\Entity\EntityInterface;
+ use Drupal\basic_cart\Utility;
+-use Drupal\Component\Utility\SafeMarkup;
+ use Drupal\Component\Utility\Xss;
+ use Drupal\Core\Render\BubbleableMetadata;
+ use Drupal\Core\Session\AccountInterface;
+-use Drupal\Core\Url;
+ use Drupal\node\NodeInterface;
+ 
+ /**
+@@ -86,7 +89,18 @@ function basic_cart_form_alter(&$form, FormStateInterface $form_state, $form_id)
+     unset($form['basic_cart_vat']);
+     unset($form['basic_cart_total_price']);
+     unset($form['basic_cart_content']);
+-    $form['actions']['submit']['#value'] = (trim($config->get('placeorder_button_name'))!="" ?$config->get('placeorder_button_name'):'Place order');
++
++    if (\Drupal::service('router.admin_context')->isAdminRoute()) {
++      //
++    } else {
++      $form['actions']['submit']['#value'] = (trim($config->get('placeorder_button_name'))!="" ?$config->get('placeorder_button_name'):'Place order');
++      $form['#prefix'] = '<div id="thank-you-page-wrapper">';
++      $form['#suffix'] = '</div>';
++      $form['actions']['submit']['#ajax'] = [
++        'callback' => 'ajax_test_dialog_form_callback_modal',
++      ];
++    }
++
+     foreach (array_keys($form['actions']) as $action) {
+       if ($action != 'preview' && isset($form['actions'][$action]['#type']) && $form['actions'][$action]['#type'] === 'submit') {
+         $form['actions'][$action]['#submit'][] = 'basic_cart_order_submit';
+@@ -122,18 +136,15 @@ function basic_cart_entity_presave(EntityInterface $node) {
+ function basic_cart_mail($key, &$message, $params) {
+   $utility = new Utility();
+   $config = $utility->checkoutSettings();
+- /* $options = array(
+-    'langcode' => $message['langcode'],
+-  );*/
+   $message['from'] = \Drupal::config('system.site')->get('mail');
+   switch ($key) {
+     case 'admin_mail':
+-      $message['subject'] = SafeMarkup::checkPlain($config->get('admin')['subject']);
++      $message['subject'] = Html::escape($config->get('admin')['subject']);
+       $message['body'][] = Xss::filter($params['admin_message']);
+       break;
+ 
+     case 'user_mail':
+-      $message['subject'] = SafeMarkup::checkPlain($config->get('user')['subject']);
++      $message['subject'] = Html::escape($config->get('user')['subject']);
+       $message['body'][] = Xss::filter($params['user_message']);
+       break;
+   }
+@@ -343,22 +354,44 @@ function basic_cart_user_login($account) {
+ }
+ 
+ /**
+- * Custom form submit function.
++ * Close form and show message
++ *
++ * @param array $form
++ * @param \Drupal\Core\Form\FormStateInterface $form_state
++ *
++ * @return \Drupal\Core\Ajax\AjaxResponse
+  */
+-function basic_cart_order_submit(&$form, FormStateInterface $form_state) {
+-
+-  $utility = new Utility();
+-  $config = $utility->checkoutSettings();
+-  $location = trim($config->get('thankyou')['custom_page']);
+-  if ($location) {
+-    $redirect = \Drupal::pathValidator()
+-      ->getUrlIfValid($location);
+-    $form_state->setRedirectUrl($redirect);
++function ajax_test_dialog_form_callback_modal(array &$form, FormStateInterface $form_state) {
++  $response = new AjaxResponse();
++
++  if ($form_state->getErrors()) {
++    unset($form['#prefix']);
++    unset($form['#suffix']);
++    $form['status_messages'] = [
++      '#type' => 'status_messages',
++      '#weight' => -10,
++    ];
++    $response->addCommand(new HtmlCommand('#thank-you-page-wrapper', $form));
+   }
+   else {
+-    $url = Url::fromRoute('basic_cart.thankyou');
+-    $form_state->setRedirectUrl($url);
++    $content = t('thank.you.text');
++    $title = t('thank.you.title');
++    $response = new AjaxResponse();
++    $response->addCommand(new OpenModalDialogCommand($title, $content, ['width' => '700', 'dialogClass' => 'thank-you-popup-dialog']));
+   }
++
++  $quantity = Utility::cartCount();
++
++  $selector2 = '.basic_cart-grid';
++  $selector3 = '.basic_cart-circles';
++
++  $rebuild_data2 = Utility::render('basic-cart-cart-template.html.twig');
++  $rebuild_data3 = "<span class='basic_cart-circles basic_cart-circle-32-26'>$quantity</span>";
++
++  $response->addCommand(new ReplaceCommand($selector3, $rebuild_data3, $settings = NULL));
++  $response->addCommand(new ReplaceCommand($selector2, $rebuild_data2, $settings = NULL));
++
++  return $response;
+ }
+ 
+ /**
+@@ -372,3 +405,16 @@ function basic_cart_node_access(NodeInterface $node, $op, AccountInterface $acco
+ 
+   return AccessResult::neutral();
+ }
++
++/**
++ *Implements hook_preprocess_status_messages().
++ */
++function basic_cart_preprocess_status_messages(&$variables) {
++  $current_user = \Drupal::currentUser();
++  $roles = $current_user->getRoles();
++
++  if ($roles[0] == "anonymous") {
++    $variables['attributes']['style'] = ['display:none'];
++  }
++}
++
+diff --git a/basic_cart.routing.yml b/basic_cart.routing.yml
+index 3b5f761..0b8f2b6 100755
+--- a/basic_cart.routing.yml
++++ b/basic_cart.routing.yml
+@@ -80,3 +80,17 @@ basic_cart.thankyou:
+   _title_callback: '\Drupal\basic_cart\Controller\CartController::getThankyouPageTitle'
+  requirements:
+   _permission: 'basic_cart use_cart'    
++basic_cart.plus_item:
++ path: '/cart/plus_item/{nid}'
++ defaults:
++  _controller: '\Drupal\basic_cart\Controller\CartController::plusItemToCart'
++  _title_callback: '\Drupal\basic_cart\Controller\CartController::getCartPageTitle'
++ requirements:
++  _permission: 'basic_cart use_cart'
++basic_cart.min_item:
++ path: '/cart/min_item/{nid}'
++ defaults:
++  _controller: '\Drupal\basic_cart\Controller\CartController::minItemToCart'
++  _title_callback: '\Drupal\basic_cart\Controller\CartController::getCartPageTitle'
++ requirements:
++  _permission: 'basic_cart use_cart'
+diff --git a/css/basic_cart.css b/css/basic_cart.css
+index 0d48f6f..b3261dc 100755
+--- a/css/basic_cart.css
++++ b/css/basic_cart.css
+@@ -183,7 +183,6 @@
+ .addtocart-quantity-wrapper-container .quantity_dynamic_text {
+   vertical-align: middle;
+   display: inline-block;
+-  width: 25%;
+   border-radius: 5px;
+   border: 1px solid rgba(53, 52, 52, 0.35);
+   padding: 5px 8px;
+diff --git a/js/basic_cart.js b/js/basic_cart.js
+index 266c39b..a166e6b 100755
+--- a/js/basic_cart.js
++++ b/js/basic_cart.js
+@@ -12,52 +12,76 @@
+ 
+ (function ($, Drupal, drupalSettings) {
+   $(function () {
+-  $(".addtocart-quantity-wrapper-container").each(function() {
+-                var this_id = $(this).attr('id');
+-                id_split = this_id.split("_");
+-                var dynamic_id = "quantitydynamictext_"+id_split[1];
+-var quantity_label = drupalSettings.basic_cart.label_value ? drupalSettings.basic_cart.label_value : 'Quantity';
++    $(".addtocart-quantity-wrapper-container").each(function () {
++      var this_id = $(this).attr('id');
++      id_split = this_id.split("_");
++      var dynamic_id = "quantitydynamictext_" + id_split[1];
++      var quantity_label = drupalSettings.basic_cart.label_value ? drupalSettings.basic_cart.label_value : Drupal.t('Quantity');
+ 
+-                var dynamic_input = '<label for="edit-quantity" class="js-form-required form-required '+ drupalSettings.basic_cart.label_class
+- +'">'+quantity_label+'</label> <input type="text" value="1" class="quantity_dynamic_text form-text required '+drupalSettings.basic_cart.textfield_class
+-+'" id="'+dynamic_id+'">';
+-                $(this).html(dynamic_input);
+-           });
++      var dynamic_input = '<label for="edit-quantity" class="js-form-required form-required ' + drupalSettings.basic_cart.label_class
++          + '">' + quantity_label + '</label> <input type="button" value="+" class="js-add-item"><input type="text" value="1" maxlength="2" size="2" class="quantity_dynamic_text form-text required ' + drupalSettings.basic_cart.textfield_class
++          + '" id="' + dynamic_id + '"><input type="button" value="-" class="js-min-item">';
++      $(this).html(dynamic_input);
++    });
+ 
+-      $(document).on('click',".basic_cart-get-quantity",function(e) {
+-        e.preventDefault();   e.stopPropagation();
+-        var this_ids = $(this).attr('id');
+-        id_splited = this_ids.split("_");
+-        var quantity = $('#quantitydynamictext_'+id_splited[1]).val();
+-        var basic_cart_throbber = '<div id="basic-cart-ajax-progress-throbber_'+id_splited[1]+'" class="basic_cart-ajax-progress-throbber ajax-progress ajax-progress-throbber"><div class="basic_cart-throbber throbber">&nbsp;</div></div>';
+-         $('#forquantitydynamictext_'+id_splited[1]).after(basic_cart_throbber);
+-         if($(this).hasClass('use-basic_cart-ajax')) {
+-         $.ajax({url: this.href+quantity, success: function(result) {
+-              $(".basic_cart-grid").each(function(){
+-                $(this).html(result.block);
+-              });
+-              $("#"+result.id).hide();
+-              $("#"+result.id).html(result.text);
+-              $(".basic_cart-circles").each(function () {
+-                $(this).html(result.count);
+-              });
+-              $("#"+result.id).fadeIn('slow').delay(1000).hide(2000);
+-              $('#basic-cart-ajax-progress-throbber_'+id_splited[1]).remove();
++    // ============ Buttons + and - for Quantity =========
++    var val = null;
++    $("input").on('click', function (e) {
++      val = $(this).parent().find('.form-text');
++
++      find_select = val.val();
++
++      switch ($(this).attr('class')) {
++        case 'js-add-item':
++          $(val).val(Number(find_select) + Number(1));
++          break;
++        case 'js-min-item':
++          if (find_select > 1) {
++            $(val).val(Number(find_select) - Number(1));
++          }
++          break;
++      }
++    });
++    // ===================================================
++
++    $(document).on('click', ".basic_cart-get-quantity", function (e) {
++      e.preventDefault();
++      e.stopPropagation();
++      var this_ids = $(this).attr('id');
++      id_splited = this_ids.split("_");
++      var quantity = $('#quantitydynamictext_' + id_splited[1]).val();
++      var basic_cart_throbber = '<div id="basic-cart-ajax-progress-throbber_' + id_splited[1] + '" class="basic_cart-ajax-progress-throbber ajax-progress ajax-progress-throbber"><div class="basic_cart-throbber throbber">&nbsp;</div></div>';
++      $('#forquantitydynamictext_' + id_splited[1]).after(basic_cart_throbber);
++      if ($(this).hasClass('use-basic_cart-ajax')) {
++        $.ajax({
++          url: this.href + quantity, success: function (result) {
++            $(".basic_cart-grid").each(function () {
++              $(this).html(result.block);
++            });
++            $("#" + result.id).hide();
++            $("#" + result.id).html(result.text);
++            $(".basic_cart-circles").each(function () {
++              $(this).html(result.count);
++            });
++            $("#" + result.id).fadeIn('slow').delay(1000).hide(2000);
++            $('#basic-cart-ajax-progress-throbber_' + id_splited[1]).remove();
+           },
+           error: function (xhr, ajaxOptions, thrownError) {
+-            $('#basic-cart-ajax-progress-throbber_'+id_splited[1]).remove();
+-            if(xhr.status==403) {
+-            $('#ajax-addtocart-message-'+id_splited[1]).html('<p class="messages messages--error">You are not authorized to add</p>').show();
+-            }else{
+-            $('#ajax-addtocart-message-'+id_splited[1]).html('<p class="messages messages--error">Contact site administrator</p>').show();
++            $('#basic-cart-ajax-progress-throbber_' + id_splited[1]).remove();
++            if (xhr.status == 403) {
++              $('#ajax-addtocart-message-' + id_splited[1]).html('<p class="messages messages--error">You are not authorized to add</p>').show();
++            }
++            else {
++              $('#ajax-addtocart-message-' + id_splited[1]).html('<p class="messages messages--error">Contact site administrator</p>').show();
+             }
+ 
+           }
+         });
+-        }else {
+-          window.location.href = this.href+quantity;
+-        }
+-      });
++      }
++      else {
++        window.location.href = this.href + quantity;
++      }
++    });
+   })
+ })(jQuery, Drupal, drupalSettings);
+ 
+diff --git a/src/CartStorage.php b/src/CartStorage.php
+index 1f39ee9..bb2b03d 100755
+--- a/src/CartStorage.php
++++ b/src/CartStorage.php
+@@ -26,12 +26,12 @@ class CartStorage {
+   public static function insert(array $entry) {
+     $return_value = NULL;
+     try {
+-      $return_value = db_insert(self::TABLE)
++      $return_value = \Drupal::database()->insert(self::TABLE)
+         ->fields($entry)
+         ->execute();
+     }
+     catch (\Exception $e) {
+-      drupal_set_message(t('db_insert failed. Message = %message, query= %query', array(
++      \Drupal::messenger()->addError(t('db_insert failed. Message = %message, query= %query', array(
+         '%message' => $e->getMessage(),
+         '%query' => $e->query_string,
+       )
+@@ -54,7 +54,7 @@ class CartStorage {
+   public static function update(array $entry) {
+     try {
+       // db_update()...->execute() returns the number of rows updated.
+-      $count = db_update(self::TABLE)
++      $count = \Drupal::database()->update(self::TABLE)
+         ->fields($entry)
+         ->condition('uid', $entry['uid'])
+         ->condition('id', $entry['id'])
+@@ -62,7 +62,7 @@ class CartStorage {
+         ->execute();
+     }
+     catch (\Exception $e) {
+-      drupal_set_message(t('db_update failed. Message = %message, query= %query', array(
++      \Drupal::messenger()->addError(t('db_update failed. Message = %message, query= %query', array(
+         '%message' => $e->getMessage(),
+         '%query' => $e->query_string,
+       )
+@@ -81,7 +81,7 @@ class CartStorage {
+    * @see db_delete()
+    */
+   public static function delete(array $entry) {
+-    $delete = db_delete(self::TABLE);
++    $delete = \Drupal::database()->delete(self::TABLE);
+     if ($entry['uid']) {
+       $delete->condition('uid', $entry['uid']);
+     }
+@@ -109,7 +109,7 @@ class CartStorage {
+    */
+   public static function load(array $entry = array()) {
+     // Read all fields from the dbtng_example table.
+-    $select = db_select(self::TABLE, 'cart');
++    $select = \Drupal::database()->select(self::TABLE, 'cart');
+     $select->fields('cart');
+ 
+     // Add each field and value as a condition to this query.
+diff --git a/src/Controller/CartController.php b/src/Controller/CartController.php
+index 9d2f009..b8056c8 100755
+--- a/src/Controller/CartController.php
++++ b/src/Controller/CartController.php
+@@ -2,6 +2,9 @@
+ 
+ namespace Drupal\basic_cart\Controller;
+ 
++use Drupal\Core\Ajax\AjaxResponse;
++use Drupal\Core\Ajax\ReplaceCommand;
++use Drupal\node\Entity\NodeType;
+ use Symfony\Cmf\Component\Routing\RouteObjectInterface;
+ use Drupal\Core\Controller\ControllerBase;
+ use Drupal\basic_cart\Utility;
+@@ -59,8 +62,69 @@ class CartController extends ControllerBase {
+    */
+   public function removeFromCart($nid) {
+     \Drupal::service('page_cache_kill_switch')->trigger();
++    $response = new AjaxResponse();
+     Utility::removeFromCart($nid);
+-    return new RedirectResponse(Url::fromUri($_SERVER['HTTP_REFERER'])->toString());
++    $quantity = Utility::cartCount();
++
++    $selector = '.basic-cart-cart-form';
++    $selector2 = '.basic_cart-grid';
++    $selector3 = '.basic_cart-circles';
++    $rebuild_data = $this->cart();
++    $rebuild_data2 = Utility::render('basic-cart-cart-template.html.twig');
++    $rebuild_data3 = "<span class='basic_cart-circles basic_cart-circle-32-26'>$quantity</span>";
++    $response->addCommand(new ReplaceCommand($selector3, $rebuild_data3, $settings = NULL));
++    $response->addCommand(new ReplaceCommand($selector2, $rebuild_data2, $settings = NULL));
++    $response->addCommand(new ReplaceCommand($selector, $rebuild_data, $settings = NULL));
++    return $response;
++  }
++
++  public function plusItemToCart($nid) {
++    \Drupal::service('page_cache_kill_switch')->trigger();
++    $query = \Drupal::request()->query;
++    $param['entitytype'] = $query->get('entitytype') ? $query->get('entitytype') : "node";
++    $param['quantity'] = $query->get('quantity') ? (is_numeric($query->get('quantity')) ? (int) $query->get('quantity') : 1) : 1;
++    Utility::addToCart($nid, $param);
++
++    $quantity = Utility::cartCount();
++
++    $response = new AjaxResponse();
++    $selector = '.basic-cart-cart-form';
++    $selector2 = '.basic_cart-circles';
++    $selector3 = '.basic_cart-grid';
++    $rebuild_data = $this->cart();
++    $rebuild_data2 = "<span class='basic_cart-circles basic_cart-circle-32-26'>$quantity</span>";
++    $rebuild_data3 = Utility::render('basic-cart-cart-template.html.twig');
++    $response->addCommand(new ReplaceCommand($selector3, $rebuild_data3, $settings = NULL));
++    $response->addCommand(new ReplaceCommand($selector, $rebuild_data, $settings = NULL));
++    $response->addCommand(new ReplaceCommand($selector2, $rebuild_data2, $settings = NULL));
++    return $response;
++  }
++
++  public function minItemToCart($nid) {
++    \Drupal::service('page_cache_kill_switch')->trigger();
++    $quantity = NULL;
++    if (isset($_SESSION['basic_cart']['cart_quantity'][$nid])) {
++      $quantity = $_SESSION['basic_cart']['cart_quantity'][$nid];
++      if ($quantity > 1) {
++        $_SESSION['basic_cart']['cart_quantity'][$nid] = $quantity - 1;
++      } else {
++        Utility::removeFromCart($nid);
++      }
++    }
++
++    $quantity = Utility::cartCount();
++
++    $response = new AjaxResponse();
++    $selector = '.basic-cart-cart-form';
++    $selector2 = '.basic_cart-circles';
++    $selector3 = '.basic_cart-grid';
++    $rebuild_data = $this->cart();
++    $rebuild_data2 = "<span class='basic_cart-circles basic_cart-circle-32-26'>$quantity</span>";
++    $rebuild_data3 = Utility::render('basic-cart-cart-template.html.twig');
++    $response->addCommand(new ReplaceCommand($selector3, $rebuild_data3, $settings = NULL));
++    $response->addCommand(new ReplaceCommand($selector, $rebuild_data, $settings = NULL));
++    $response->addCommand(new ReplaceCommand($selector2, $rebuild_data2, $settings = NULL));
++    return $response;
+   }
+ 
+   /**
+@@ -70,7 +134,8 @@ class CartController extends ControllerBase {
+    *   Node id of the cart content.
+    *
+    * @return Object
+-   *   Json Object response with html div text   *    */
++   *   Json Object response with html div text
++   **/
+   public function addToCart($nid) {
+     \Drupal::service('page_cache_kill_switch')->trigger();
+     $query = \Drupal::request()->query;
+@@ -82,7 +147,7 @@ class CartController extends ControllerBase {
+ 
+     }
+     else {
+-      drupal_get_messages();
++      \Drupal::messenger()->messagesByType('status');
+       $response = new \stdClass();
+       $response->status = TRUE;
+       $response->count = Utility::cartCount();
+@@ -104,8 +169,8 @@ class CartController extends ControllerBase {
+     $utility = new Utility();
+     $cart = $utility::getCart();
+     if (isset($cart['cart']) && !empty($cart['cart'])) {
+-      $type = node_type_load("basic_cart_order");
+-      $node = $this->entityManager()->getStorage('node')->create(array(
++      $type = NodeType::load("basic_cart_order");
++      $node = $this->entityTypeManager()->getStorage('node')->create(array(
+         'type' => $type->id(),
+       ));
+ 
+@@ -130,8 +195,8 @@ class CartController extends ControllerBase {
+    *   Returns Drupal create form of order content type
+    */
+   public function orderCreate() {
+-    $type = node_type_load("basic_cart_order");
+-    $node = $this->entityManager()->getStorage('node')->create(array(
++    $type = NodeType::load("basic_cart_order");
++    $node = $this->entityTypeManager()->getStorage('node')->create(array(
+       'type' => $type->id(),
+     ));
+ 
+diff --git a/src/Form/CartForm.php b/src/Form/CartForm.php
+index 6b81133..e698648 100755
+--- a/src/Form/CartForm.php
++++ b/src/Form/CartForm.php
+@@ -2,6 +2,7 @@
+ 
+ namespace Drupal\basic_cart\Form;
+ 
++use Drupal\Component\Serialization\Json;
+ use Drupal\Core\Form\FormBase;
+ use Drupal\Core\Form\FormStateInterface;
+ use Drupal\basic_cart\Utility;
+@@ -29,11 +30,6 @@ class CartForm extends FormBase {
+     $form['#theme'] = 'cart_form';
+     $cart = Utility::getCart();
+     $config = Utility::cartSettings();
+-    //$langcode = \Drupal::languageManager()->getCurrentLanguage()->getId();
+-    //$price = Utility::getTotalPrice();
+-    //$total = Utility::formatPrice($price->total);
+-    //$vat_is_enabled = (int) $config->get('vat_state');
+-   // $vat_value = !empty($vat_is_enabled) && $vat_is_enabled ? Utility::formatPrice($price->vat) : 0;
+ 
+     // And now the form.
+     $form['cartcontents'] = array(
+@@ -43,6 +39,7 @@ class CartForm extends FormBase {
+     // Cart elements.
+     foreach ($cart['cart_quantity'] as $nid => $quantity) {
+       $variable = Utility::quantityPrefixData($nid);
++
+       $form['cartcontents'][$nid] = array(
+         '#type' => $config->get('quantity_status') ? 'textfield' : 'markup',
+         '#size' => 2,
+@@ -61,22 +58,22 @@ class CartForm extends FormBase {
+       '#tree' => TRUE,
+     );
+ 
+-    $form['buttons']['update'] = array(
+-      '#type' => 'submit',
+-      '#value' => t($config->get('cart_update_button')),
+-      '#name' => "update",
+-    );
+-
+     if ($config->get('order_status')) {
+       $form['buttons']['checkout'] = array(
+-        '#type' => 'submit',
+-        '#value' =>(trim($config->get('cart_button_name'))!="" ?$config->get('cart_button_name'):'Checkout'),
+-        '#name' => "checkout",
++        '#type' => 'link',
++        '#title' => $this->t('Checkout'),
++        '#url' => Url::fromRoute('basic_cart.checkout'),
++        '#attributes' => [
++          'class' => ['use-ajax'],
++          'data-dialog-type' => 'modal',
++          'data-dialog-options' => Json::encode([
++            'width' => 700,
++          ]),
++        ],
+       );
+     }
+ 
+     return $form;
+-
+   }
+ 
+   /**
+diff --git a/src/Form/CartSettingsForm.php b/src/Form/CartSettingsForm.php
+index 1eb144a..d4c56f9 100755
+--- a/src/Form/CartSettingsForm.php
++++ b/src/Form/CartSettingsForm.php
+@@ -5,6 +5,7 @@ namespace Drupal\basic_cart\Form;
+ use Drupal\Core\Form\ConfigFormBase;
+ use Drupal\Core\Form\FormStateInterface;
+ use Drupal\basic_cart\Utility;
++use Drupal\node\Entity\NodeType;
+ 
+ /**
+  * Configure basic_cart settings for this site.
+@@ -32,7 +33,7 @@ class CartSettingsForm extends ConfigFormBase {
+    */
+   public function buildForm(array $form, FormStateInterface $form_state) {
+     $config = \Drupal::config('basic_cart.settings');
+-    $node_types = node_type_get_types();
++    $node_types = NodeType::loadMultiple();
+     if (empty($node_types)) {
+       return NULL;
+     }
+diff --git a/src/Plugin/Block/CartBlock.php b/src/Plugin/Block/CartBlock.php
+index 3b9a6c5..053b428 100755
+--- a/src/Plugin/Block/CartBlock.php
++++ b/src/Plugin/Block/CartBlock.php
+@@ -2,8 +2,10 @@
+ 
+ namespace Drupal\basic_cart\Plugin\Block;
+ 
++use Drupal\Component\Serialization\Json;
+ use Drupal\Core\Block\BlockBase;
+ use Drupal\basic_cart\Utility;
++use Drupal\Core\Url;
+ 
+ /**
+  * Provides a 'Basic Cart' block.
+@@ -20,14 +22,29 @@ class CartBlock extends BlockBase {
+    */
+   public function build() {
+     $config = Utility::cartSettings();
+-    return array(
+-      // '#theme' => 'basic_cart_cart_template',
+-      // '#basic_cart' => array(),
+-      '#type' => 'markup',
+-      '#title' => $config->get('cart_block_title'),
+-      '#markup' => Utility::render(),
+-      '#cache' => array('max-age' => 0),
+-    );
++
++    return [
++      [
++        '#type' => 'markup',
++        '#title' => $config->get('cart_block_title'),
++        '#markup' => Utility::render(),
++        '#cache' => array('max-age' => 0),
++      ],
++      [
++        '#type' => 'link',
++        '#title' => $config->get('cart_block_title'),
++        '#url' => Url::fromRoute('basic_cart.cart'),
++        '#options' => ['attributes' => [
++          'class' => ['use-ajax', 'button'],
++          'data-dialog-type' => 'modal',
++          'data-dialog-options' => Json::encode([
++            'width' => 700,
++          ]),
++        ]],
++        '#attached' => ['library' => ['core/drupal.dialog.ajax']],
++      ]
++    ];
++
+   }
+ 
+ }
+diff --git a/src/Plugin/Block/CountBlock.php b/src/Plugin/Block/CountBlock.php
+index 086af02..3b8a9d2 100755
+--- a/src/Plugin/Block/CountBlock.php
++++ b/src/Plugin/Block/CountBlock.php
+@@ -2,10 +2,10 @@
+ 
+ namespace Drupal\basic_cart\Plugin\Block;
+ 
++use Drupal\Component\Utility\Html;
+ use Drupal\Core\Block\BlockBase;
+ use Drupal\basic_cart\Utility;
+ use Drupal\Core\Form\FormStateInterface;
+-use Drupal\Component\Utility\SafeMarkup;
+ 
+ /**
+  * Provides a 'Basic Cart Count' block.
+@@ -29,24 +29,24 @@ class CountBlock extends BlockBase {
+       '#cache' => array('max-age' => 0),
+     );
+     if ($config['float']) {
+-      $render['#float'] = SafeMarkup::checkPlain($config['float'])->__toString();
++      $render['#float'] = Html::escape($config['float']);
+     }
+     if ($config['size']) {
+-      $render['#size'] = SafeMarkup::checkPlain($config['size'])->__toString();
+-      $render['#size_class'] = "-" . str_replace("x", "-", SafeMarkup::checkPlain($config['size'])->__toString());
+-      $css = str_replace("x", "", SafeMarkup::checkPlain($config['size'])->__toString());
++      $render['#size'] = Html::escape($config['size']);
++      $render['#size_class'] = "-" . str_replace("x", "-", Html::escape($config['size']));
++      $css = str_replace("x", "", Html::escape($config['size']));
+     }
+     if ($config['top']) {
+-      $render['#top'] = SafeMarkup::checkPlain($config['top'])->__toString() . 'px';
++      $render['#top'] = Html::escape($config['top']) . 'px';
+     }
+     if ($config['bottom']) {
+-      $render['#bottom'] = SafeMarkup::checkPlain($config['bottom'])->__toString() . 'px';
++      $render['#bottom'] = Html::escape($config['bottom']) . 'px';
+     }
+     if ($config['left']) {
+-      $render['#left'] = SafeMarkup::checkPlain($config['left'])->__toString() . 'px';
++      $render['#left'] = Html::escape($config['left']) . 'px';
+     }
+     if ($config['right']) {
+-      $render['#right'] = SafeMarkup::checkPlain($config['right'])->__toString() . 'px';
++      $render['#right'] = Html::escape($config['right']) . 'px';
+     }
+     if (!$css) {
+       $css = "4839";
+diff --git a/src/Plugin/Field/FieldFormatter/AddToCartFormatter.php b/src/Plugin/Field/FieldFormatter/AddToCartFormatter.php
+index 9787f97..c7ef406 100755
+--- a/src/Plugin/Field/FieldFormatter/AddToCartFormatter.php
++++ b/src/Plugin/Field/FieldFormatter/AddToCartFormatter.php
+@@ -2,11 +2,11 @@
+ 
+ namespace Drupal\basic_cart\Plugin\Field\FieldFormatter;
+ 
++use Drupal\Component\Utility\Html;
+ use Drupal\Core\Field\FormatterBase;
+ use Drupal\Core\Field\FieldItemListInterface;
+ use Drupal\Core\Url;
+ use Drupal\Core\Form\FormStateInterface;
+-use Drupal\Component\Utility\SafeMarkup;
+ 
+ /**
+  * Plugin implementation of the 'addtocart' formatter.
+@@ -40,10 +40,10 @@ class AddToCartFormatter extends FormatterBase {
+   public function viewElements(FieldItemListInterface $items, $langcode) {
+     $entity = $items->getEntity();
+     if ($entity->get('add_to_cart')->getValue()[0]['value'] == 1) {
+-      $addtocart_wrapper_container_class = SafeMarkup::checkPlain($this->getSetting('addtocart_wrapper_container_class'))->__toString();
+-      $addtocart_button_container_class = SafeMarkup::checkPlain($this->getSetting('addtocart_button_container_class'))->__toString();
+-      $addtocart_button_class = SafeMarkup::checkPlain($this->getSetting('addtocart_button_class'))->__toString();
+-      $addtocart_message_wrapper_class = SafeMarkup::checkPlain($this->getSetting('addtocart_message_wrapper_class'))->__toString();
++      $addtocart_wrapper_container_class = Html::escape($this->getSetting('addtocart_wrapper_container_class'))->__toString();
++      $addtocart_button_container_class = Html::escape($this->getSetting('addtocart_button_container_class'))->__toString();
++      $addtocart_button_class = Html::escape($this->getSetting('addtocart_button_class'))->__toString();
++      $addtocart_message_wrapper_class = Html::escape($this->getSetting('addtocart_message_wrapper_class'))->__toString();
+ 
+       $config = \Drupal::config('basic_cart.settings');
+       $elements = array();
+diff --git a/src/Plugin/Field/FieldFormatter/AddToCartWithQuantityFormatter.php b/src/Plugin/Field/FieldFormatter/AddToCartWithQuantityFormatter.php
+index 78df1b9..3fdb6f8 100755
+--- a/src/Plugin/Field/FieldFormatter/AddToCartWithQuantityFormatter.php
++++ b/src/Plugin/Field/FieldFormatter/AddToCartWithQuantityFormatter.php
+@@ -2,11 +2,11 @@
+ 
+ namespace Drupal\basic_cart\Plugin\Field\FieldFormatter;
+ 
++use Drupal\Component\Utility\Html;
+ use Drupal\Core\Field\FormatterBase;
+ use Drupal\Core\Field\FieldItemListInterface;
+ use Drupal\Core\Url;
+ use Drupal\Core\Form\FormStateInterface;
+-use Drupal\Component\Utility\SafeMarkup;
+ 
+ /**
+  * Plugin implementation of the 'addtocartwithquantity' formatter.
+@@ -44,14 +44,14 @@ class AddToCartWithQuantityFormatter extends FormatterBase {
+   public function viewElements(FieldItemListInterface $items, $langcode) {
+ 
+     $config = \Drupal::config('basic_cart.settings');
+-    $addtocart_wrapper_container_class = SafeMarkup::checkPlain($this->getSetting('quantity_addtocart_wrapper_container_class'))->__toString();
+-    $addtocart_button_container_class = SafeMarkup::checkPlain($this->getSetting('quantity_addtocart_button_container_class'))->__toString();
+-    $addtocart_button_class = SafeMarkup::checkPlain($this->getSetting('quantity_addtocart_button_class'))->__toString();
+-    $addtocart_message_wrapper_class = SafeMarkup::checkPlain($this->getSetting('quantity_addtocart_message_wrapper_class'))->__toString();
+-    $addtocart_quantity_wrapper_container_class = SafeMarkup::checkPlain($this->getSetting('quantity_addtocart_quantity_wrapper_container_class'))->__toString();
+-    $addtocart_quantity_textfield_class = SafeMarkup::checkPlain($this->getSetting('quantity_addtocart_quantity_textfield_class'))->__toString();
+-    $addtocart_quantity_label_class = SafeMarkup::checkPlain($this->getSetting('quantity_addtocart_quantity_label_class'))->__toString();
+-    $addtocart_quantity_label_value = t(SafeMarkup::checkPlain($this->getSetting('quantity_addtocart_quantity_label_value'))->__toString());
++    $addtocart_wrapper_container_class = Html::escape($this->getSetting('quantity_addtocart_wrapper_container_class'));
++    $addtocart_button_container_class = Html::escape($this->getSetting('quantity_addtocart_button_container_class'));
++    $addtocart_button_class = Html::escape($this->getSetting('quantity_addtocart_button_class'));
++    $addtocart_message_wrapper_class = Html::escape($this->getSetting('quantity_addtocart_message_wrapper_class'));
++    $addtocart_quantity_wrapper_container_class = Html::escape($this->getSetting('quantity_addtocart_quantity_wrapper_container_class'));
++    $addtocart_quantity_textfield_class = Html::escape($this->getSetting('quantity_addtocart_quantity_textfield_class'));
++    $addtocart_quantity_label_class = Html::escape($this->getSetting('quantity_addtocart_quantity_label_class'));
++    $addtocart_quantity_label_value = t(Html::escape($this->getSetting('quantity_addtocart_quantity_label_value')));
+ 
+     $entity = $items->getEntity();
+     $config = \Drupal::config('basic_cart.settings');
+diff --git a/src/Settings.php b/src/Settings.php
+index f6a3bed..24e8378 100755
+--- a/src/Settings.php
++++ b/src/Settings.php
+@@ -37,7 +37,7 @@ class Settings {
+    */
+   public static  function cartUpdatedMessage() {
+     $config = static::cartSettings();
+-    drupal_set_message(t($config->get('cart_updated_message')));
++    \Drupal::messenger()->addMessage(t($config->get('cart_updated_message')));
+   }
+ 
+   /**
+diff --git a/src/Utility.php b/src/Utility.php
+index 12506ed..9df5886 100755
+--- a/src/Utility.php
++++ b/src/Utility.php
+@@ -224,7 +224,7 @@ class Utility extends Settings {
+    */
+   public static function createFields($type = NULL) {
+     $fields = ($type == self::FIELD_ORDERCONNECT) ? self::getFieldsConfig(self::FIELD_ORDERCONNECT) : self::getFieldsConfig();
+-    $view_modes = \Drupal::entityManager()->getViewModes('node');
++    $view_modes = \Drupal::service('entity_display.repository')->getViewModes('node');
+     $storage = \Drupal::entityTypeManager()->getStorage('entity_view_display');
+ 
+     foreach ($fields->fields as $field_name => $config) {
+@@ -302,7 +303,7 @@ class Utility extends Settings {
+       // price feild in formatter and remove other fields.
+       $view_display = $storage->load($config['entity_type'] . '.' . $bundle . '.basic_cart_order');
+       if ($view_display != NULL) {
+-        foreach (\Drupal::entityManager()->getFieldDefinitions($config['entity_type'], $bundle) as $field_name => $field_definition) {
++        foreach (\Drupal::service('entity_field.manager')->getFieldDefinitions($config['entity_type'], $bundle) as $field_name => $field_definition) {
+           if (!empty($field_definition->getTargetBundle())) {
+             if (!in_array($field_definition->getName(), ['add_to_cart_price'])) {
+               $view_display->removeComponent($field_definition->getName());
+@@ -436,13 +437,20 @@ class Utility extends Settings {
+    *
+    * @param int $nid
+    *   Node id of content.
++   *
++   * @return array
+    */
+   public static function quantityPrefixData($nid) {
+     global $base_url;
+     $url = new Url('basic_cart.cartremove', array("nid" => $nid));
++    $url_plus = new Url('basic_cart.plus_item', array("nid" => $nid));
++    $url_min = new Url('basic_cart.min_item', array("nid" => $nid));
+     $cart = Utility::getCart($nid);
+     $basic_cart = array();
+     $basic_cart['delete_url'] = $url->toString();
++    $basic_cart['plus_url'] = $url_plus->toString();
++    $basic_cart['min_url'] = $url_min->toString();
++    $basic_cart['node_id'] = $nid;
+     $basic_cart['module_url'] = $base_url . '/' . drupal_get_path('module', 'basic_cart');
+     $basic_cart['notempty'] = FALSE;
+     if (!empty($cart['cart'])) {
+diff --git a/templates/basic-cart-cart-template.html.twig b/templates/basic-cart-cart-template.html.twig
+index f017b1e..abe707c 100755
+--- a/templates/basic-cart-cart-template.html.twig
++++ b/templates/basic-cart-cart-template.html.twig
+@@ -33,12 +33,5 @@
+         </div>
+         {%endif%}
+ 
+-
+-
+-       <div class="basic_cart-cart-checkout-button basic_cart-cart-checkout-button-block row">
+-        <a href='{{ basic_cart.config.view_cart_url }}' class='button'>{{ basic_cart.config.view_cart_button }} </a>
+-      </div>
+-
+-
+-  {%endif%}
++  {% endif %}
+ </div>
+\ No newline at end of file
+diff --git a/templates/basic-cart-count-block.html.twig b/templates/basic-cart-count-block.html.twig
+index c09f36b..d1da7cd 100644
+--- a/templates/basic-cart-count-block.html.twig
++++ b/templates/basic-cart-count-block.html.twig
+@@ -1,3 +1,11 @@
+-<div class="basic_cart-msg-pck{% if size_class is defined %}{{size_class}}{%endif%}" style="float:{% if float is defined %}{{float}}{%endif%}; right:{% if right is defined %}{{right}}{%endif%}; left:{% if left is defined %}{{left}}{%endif%}; top:{% if top is defined %}{{top}}{%endif%}; bottom:{% if bottom is defined %}{{bottom}}{%endif%};">
+-<a title="Cart" href="{{ url('<front>')|render ~ 'cart' }}"><img src="{% if module_url is defined %}{{ module_url }}{%endif%}/images/cart_{% if size is defined %}{{size}}{%endif%}.png" alt="cart icon"><span class="basic_cart-circles basic_cart-circle{% if size_class is defined %}{{size_class}}{%endif%}">{% if cartcount is defined %}{{cartcount}}{%endif%}</span></a>
++<div
++  class="basic-cart-block-count basic_cart-msg-pck{% if size_class is defined %}{{ size_class }}{% endif %}"
++  style="float:{% if float is defined %}{{ float }}{% endif %}; right:{% if right is defined %}{{ right }}{% endif %}; left:{% if left is defined %}{{ left }}{% endif %}; top:{% if top is defined %}{{ top }}{% endif %}; bottom:{% if bottom is defined %}{{ bottom }}{% endif %};">
++  <a title="Cart" href="{{ url('<front>')|render ~ 'cart' }}" class="use-ajax"
++     data-dialog-type="modal">
++    <img
++      src="{% if module_url is defined %}{{ module_url }}{% endif %}/images/cart_{% if size is defined %}{{ size }}{% endif %}.png"
++      alt="cart icon"><span
++      class="basic_cart-circles basic_cart-circle{% if size_class is defined %}{{ size_class }}{% endif %}">{% if cartcount is defined %}{{ cartcount }}{% endif %}</span>
++  </a>
+ </div>
+diff --git a/templates/basic-cart-quantity-prefix.html.twig b/templates/basic-cart-quantity-prefix.html.twig
+index b0ead82..edc6f18 100644
+--- a/templates/basic-cart-quantity-prefix.html.twig
++++ b/templates/basic-cart-quantity-prefix.html.twig
+@@ -1,6 +1,28 @@
++{% if basic_cart.notempty %}
++<div class="basic_cart-cart-contents row">
++  <div class="basic_cart-delete-image cell">
++    <span class="basic_cart-delete-image-image">
++      <a href="{{ basic_cart.delete_url }}" class="use-ajax">
++        <img src="{{ basic_cart.module_url }}/images/delete.png"/>
++      </a>
++    </span>
++  </div>
++  <div class="basic_cart-cart-node-title cell">
++    {{ basic_cart.title_link }}<br/>
++  </div>
++  <div class="cell basic_cart-cart-unit-price">
++    <strong>{{ basic_cart.unit_price }}</strong>
++  </div>
+ 
+-{%if basic_cart.notempty %}
+-<div class="basic_cart-cart-contents row"><div class="basic_cart-delete-image cell"><span class="basic_cart-delete-image-image"><a href="{{ basic_cart.delete_url }}"><img src="{{ basic_cart.module_url }}/images/delete2.png"/></a></span></div><div class="basic_cart-cart-node-title cell">{{ basic_cart.title_link }}<br /></div><div class="cell basic_cart-cart-unit-price"><strong>{{ basic_cart.unit_price }}</strong></div><div class="basic_cart-cart-quantity cell"><div class="cell">
+-{%endif%}
++  <div class="basic_cart-cart-quantity cell">
++    <div class="basic_cart-plus-item cell">
++      <span class="basic_cart-plus-item-image">
++        <a href="{{ basic_cart.plus_url }}" class="use-ajax">
++          <img src="{{ basic_cart.module_url }}/images/plus.png"/>
++        </a>
++      </span>
++    </div>
++    <div class="cell-quantity-{{ basic_cart.node_id }} cell">
++      {% endif %}
+ 
+   
+diff --git a/templates/basic-cart-quantity-suffix.html.twig b/templates/basic-cart-quantity-suffix.html.twig
+index 9681fbf..8df0e25 100644
+--- a/templates/basic-cart-quantity-suffix.html.twig
++++ b/templates/basic-cart-quantity-suffix.html.twig
+@@ -1,6 +1,14 @@
+-
+-{%if basic_cart.notempty %}
+-</div></div></div>
+-{%endif%}
++{% if basic_cart.notempty %}
++    </div>
++    <div class="basic_cart-min-item cell">
++      <span class="basic_cart-min-item-image">
++        <a href="{{ basic_cart.min_url }}" class="use-ajax">
++          <img src="{{ basic_cart.module_url }}/images/min.png"/>
++        </a>
++      </span>
++    </div>
++  </div>
++</div>
++{% endif %}
+ 
+   
