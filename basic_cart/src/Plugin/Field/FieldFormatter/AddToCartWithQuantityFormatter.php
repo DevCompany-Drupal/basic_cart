@@ -26,7 +26,7 @@ class AddToCartWithQuantityFormatter extends FormatterBase {
    * {@inheritdoc}
    */
   public static function defaultSettings() {
-    return array(
+    return [
       'quantity_addtocart_wrapper_container_class' => '',
       'quantity_addtocart_button_container_class' => '',
       'quantity_addtocart_button_class' => '',
@@ -35,7 +35,7 @@ class AddToCartWithQuantityFormatter extends FormatterBase {
       'quantity_addtocart_quantity_textfield_class' => '',
       'quantity_addtocart_quantity_label_class' => '',
       'quantity_addtocart_quantity_label_value' => '',
-    ) + parent::defaultSettings();
+    ] + parent::defaultSettings();
   }
 
   /**
@@ -55,7 +55,7 @@ class AddToCartWithQuantityFormatter extends FormatterBase {
 
     $entity = $items->getEntity();
     $config = \Drupal::config('basic_cart.settings');
-    $elements = array();
+    $elements = [];
 
     $option = [
       'query' => ['entitytype' => $entity->getEntityTypeId(), 'quantity' => ''],
@@ -94,47 +94,47 @@ class AddToCartWithQuantityFormatter extends FormatterBase {
    */
   public function settingsForm(array $form, FormStateInterface $form_state) {
 
-    $element = array();
-    $element['quantity_addtocart_wrapper_container_class'] = array(
+    $element = [];
+    $element['quantity_addtocart_wrapper_container_class'] = [
       '#type' => 'textfield',
       '#title' => t('Add to cart wrapper class (css)'),
       '#default_value' => $this->getSetting('quantity_addtocart_wrapper_container_class'),
-    );
-    $element['quantity_addtocart_button_container_class'] = array(
+    ];
+    $element['quantity_addtocart_button_container_class'] = [
       '#type' => 'textfield',
       '#title' => t('Add to cart button container class (css)'),
       '#default_value' => $this->getSetting('quantity_addtocart_button_container_class'),
-    );
-    $element['quantity_addtocart_button_class'] = array(
+    ];
+    $element['quantity_addtocart_button_class'] = [
       '#type' => 'textfield',
       '#title' => t('Add to cart button class (css)'),
       '#default_value' => $this->getSetting('quantity_addtocart_button_class'),
-    );
-    $element['quantity_addtocart_message_wrapper_class'] = array(
+    ];
+    $element['quantity_addtocart_message_wrapper_class'] = [
       '#type' => 'textfield',
       '#title' => t('Add to cart button class (css)'),
       '#default_value' => $this->getSetting('quantity_addtocart_message_wrapper_class'),
-    );
-    $element['quantity_addtocart_quantity_wrapper_container_class'] = array(
+    ];
+    $element['quantity_addtocart_quantity_wrapper_container_class'] = [
       '#type' => 'textfield',
       '#title' => t('Quantity wrapper class (css)'),
       '#default_value' => $this->getSetting('quantity_addtocart_quantity_wrapper_container_class'),
-    );
-    $element['quantity_addtocart_quantity_textfield_class'] = array(
+    ];
+    $element['quantity_addtocart_quantity_textfield_class'] = [
       '#type' => 'textfield',
       '#title' => t('Quantity textfield class (css)'),
       '#default_value' => $this->getSetting('quantity_addtocart_quantity_textfield_class'),
-    );
-    $element['quantity_addtocart_quantity_label_class'] = array(
+    ];
+    $element['quantity_addtocart_quantity_label_class'] = [
       '#type' => 'textfield',
       '#title' => t('Quantity label class (css)'),
       '#default_value' => $this->getSetting('quantity_addtocart_quantity_label_class'),
-    );
-    $element['quantity_addtocart_quantity_label_value'] = array(
+    ];
+    $element['quantity_addtocart_quantity_label_value'] = [
       '#type' => 'textfield',
       '#title' => t('Quantity label value'),
       '#default_value' => $this->getSetting('quantity_addtocart_quantity_label_value'),
-    );
+    ];
     return $element;
   }
 

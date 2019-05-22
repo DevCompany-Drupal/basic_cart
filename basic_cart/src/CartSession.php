@@ -34,13 +34,13 @@ class CartSession implements CartInterface {
   public function getCart($nid = NULL) {
     // print_r($nid); die;.
     if (isset($nid)) {
-      return array("cart" => $_SESSION['basic_cart']['cart'][$nid], "cart_quantity" => $_SESSION['basic_cart']['cart_quantity'][$nid]);
+      return ["cart" => $_SESSION['basic_cart']['cart'][$nid], "cart_quantity" => $_SESSION['basic_cart']['cart_quantity'][$nid]];
     }
     if (isset($_SESSION['basic_cart']['cart'])) {
-      return array("cart" => $_SESSION['basic_cart']['cart'], "cart_quantity" => $_SESSION['basic_cart']['cart_quantity']);
+      return ["cart" => $_SESSION['basic_cart']['cart'], "cart_quantity" => $_SESSION['basic_cart']['cart_quantity']];
     }
     // Empty cart.
-    return array("cart" => array(), "cart_quantity" => array());
+    return ["cart" => [], "cart_quantity" => []];
   }
 
   /**
@@ -73,7 +73,7 @@ class CartSession implements CartInterface {
    * @param array $params
    *   Quantity and entity types.
    */
-  public  function addToCart($id, array $params = array()) {
+  public  function addToCart($id, array $params = []) {
     $config = Settings::cartSettings();
     if (!empty($params)) {
       $quantity = $params['quantity'];

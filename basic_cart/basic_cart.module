@@ -24,27 +24,27 @@ use Drupal\node\NodeInterface;
  */
 function basic_cart_theme($existing, $type, $theme, $path) {
   global $base_url;
-  return array(
-    'basic_cart_cart_template' => array(
-      'variables' => array('basic_cart' => NULL),
-    ),
-    'total_price_markup' => array(
-      'variables' => array('price' => NULL),
-    ),
-    'cart_form' => array(
+  return [
+    'basic_cart_cart_template' => [
+      'variables' => ['basic_cart' => NULL],
+    ],
+    'total_price_markup' => [
+      'variables' => ['price' => NULL],
+    ],
+    'cart_form' => [
       'render element' => 'form',
-    ),
-    'basic_cart_quantity_prefix' => array(
-      'variables' => array('basic_cart' => NULL),
-    ),
-    'basic_cart_quantity_suffix' => array(
-      'variables' => array('basic_cart' => NULL),
-    ),
-    'basic_cart_thank_you' => array(
-      'variables' => array('basic_cart' => NULL),
-    ),
-    'basic_cart_count_block' => array(
-      'variables' => array(
+    ],
+    'basic_cart_quantity_prefix' => [
+      'variables' => ['basic_cart' => NULL],
+    ],
+    'basic_cart_quantity_suffix' => [
+      'variables' => ['basic_cart' => NULL],
+    ],
+    'basic_cart_thank_you' => [
+      'variables' => ['basic_cart' => NULL],
+    ],
+    'basic_cart_count_block' => [
+      'variables' => [
         'cartcount' => NULL,
         'module_url' => $base_url . '/' . drupal_get_path('module', 'basic_cart'),
         'size' => "48x39",
@@ -54,9 +54,9 @@ function basic_cart_theme($existing, $type, $theme, $path) {
         'top' => '6px',
         'bottom' => 0,
         'size_class' => '-48-39',
-      ),
-    ),
-  );
+      ],
+    ],
+  ];
 }
 
 /**
@@ -82,7 +82,7 @@ function basic_cart_entity_insert(EntityInterface $node) {
  */
 function basic_cart_form_alter(&$form, FormStateInterface $form_state, $form_id) {
   $config = \Drupal::config('basic_cart.settings');
-  $form_ids = array('node_basic_cart_order_edit_form', 'node_basic_cart_order_form');
+  $form_ids = ['node_basic_cart_order_edit_form', 'node_basic_cart_order_form'];
   if (in_array($form_id, $form_ids)) {
     $form['title']['widget'][0]['value']['#title'] = t('Name');
 
@@ -91,9 +91,9 @@ function basic_cart_form_alter(&$form, FormStateInterface $form_state, $form_id)
     unset($form['basic_cart_content']);
 
     if (\Drupal::service('router.admin_context')->isAdminRoute()) {
-      //
-    } else {
-      $form['actions']['submit']['#value'] = (trim($config->get('placeorder_button_name'))!="" ?$config->get('placeorder_button_name'):'Place order');
+    }
+    else {
+      $form['actions']['submit']['#value'] = (trim($config->get('placeorder_button_name')) != "" ? $config->get('placeorder_button_name') : 'Place order');
       $form['#prefix'] = '<div id="thank-you-page-wrapper">';
       $form['#suffix'] = '</div>';
       $form['actions']['submit']['#ajax'] = [
@@ -165,11 +165,11 @@ function basic_cart_order_send_notifications($order) {
   $message_html = $config->get('admin')['body'];
 
   // Token data.
-  $data = array('node' => $order);
-  $message_html = $token->replace($message_html, $data, array(
+  $data = ['node' => $order];
+  $message_html = $token->replace($message_html, $data, [
     'callback' => 'basic_cart_order_tokens_format',
     'clear' => TRUE,
-  ));
+  ]);
 
   // Admin mail.
   $params['admin_message'] = $message_html;
@@ -212,11 +212,11 @@ function basic_cart_order_send_notifications($order) {
   if ($send_user_mail) {
     $message_html = $config->get('user')['body'];
     // Token data.
-    $data = array('node' => $order);
-    $message_html = $token->replace($message_html, $data, array(
+    $data = ['node' => $order];
+    $message_html = $token->replace($message_html, $data, [
       'callback' => 'basic_cart_order_tokens_format',
       'clear' => TRUE,
-    ));
+    ]);
     $params['user_message'] = $message_html;
     // Sending mail.
     $email = $order->getTranslation($langcode)->get('basic_cart_email')->getValue();
@@ -261,9 +261,9 @@ function basic_cart_order_tokens_format(array &$tokens) {
  * Implements hook_tokens().
  */
 function basic_cart_tokens($type, $tokens, array $data, array $options, BubbleableMetadata $bubbleable_metadata) {
-  $replacements = array();
+  $replacements = [];
   $utility = new Utility();
-  $order = isset($data["node"]) ? $data["node"] : array();
+  $order = isset($data["node"]) ? $data["node"] : [];
   // The first thing that we're going to check for is the type of token - node,
   // user etc...
   if ($type == 'basic_cart_order') {
@@ -321,12 +321,12 @@ function basic_cart_tokens($type, $tokens, array $data, array $options, Bubbleab
  * Implements hook_token_info().
  */
 function basic_cart_token_info() {
-  $info = array();
+  $info = [];
 
   // Add any new tokens.
   $info['tokens']['basic_cart_order']['products'] = [
     'name' => t('Products'),
-    'description' => t('Listing of ordered products.')
+    'description' => t('Listing of ordered products.'),
   ];
   $info['tokens']['basic_cart_order']['basic_cart_total_price'] = [
     'name' => t('Basic cart total price'),
@@ -354,7 +354,7 @@ function basic_cart_user_login($account) {
 }
 
 /**
- * Close form and show message
+ * Close form and show message.
  *
  * @param array $form
  * @param \Drupal\Core\Form\FormStateInterface $form_state
@@ -407,7 +407,7 @@ function basic_cart_node_access(NodeInterface $node, $op, AccountInterface $acco
 }
 
 /**
- *Implements hook_preprocess_status_messages().
+ * Implements hook_preprocess_status_messages().
  */
 function basic_cart_preprocess_status_messages(&$variables) {
   $current_user = \Drupal::currentUser();
@@ -417,4 +417,3 @@ function basic_cart_preprocess_status_messages(&$variables) {
     $variables['attributes']['style'] = ['display:none'];
   }
 }
-

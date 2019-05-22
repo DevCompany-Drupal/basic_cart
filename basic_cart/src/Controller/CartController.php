@@ -47,7 +47,7 @@ class CartController extends ControllerBase {
       $route->setDefault('_title', t($config->get('cart_page_title')));
     }
 
-    return !empty($cart['cart']) ? \Drupal::formBuilder()->getForm('\Drupal\basic_cart\Form\CartForm') : array('#type' => 'markup', '#markup' => t($config->get('empty_cart')));
+    return !empty($cart['cart']) ? \Drupal::formBuilder()->getForm('\Drupal\basic_cart\Form\CartForm') : ['#type' => 'markup', '#markup' => t($config->get('empty_cart'))];
 
   }
 
@@ -78,6 +78,9 @@ class CartController extends ControllerBase {
     return $response;
   }
 
+  /**
+   *
+   */
   public function plusItemToCart($nid) {
     \Drupal::service('page_cache_kill_switch')->trigger();
     $query = \Drupal::request()->query;
@@ -100,6 +103,9 @@ class CartController extends ControllerBase {
     return $response;
   }
 
+  /**
+   *
+   */
   public function minItemToCart($nid) {
     \Drupal::service('page_cache_kill_switch')->trigger();
     $quantity = NULL;
@@ -107,7 +113,8 @@ class CartController extends ControllerBase {
       $quantity = $_SESSION['basic_cart']['cart_quantity'][$nid];
       if ($quantity > 1) {
         $_SESSION['basic_cart']['cart_quantity'][$nid] = $quantity - 1;
-      } else {
+      }
+      else {
         Utility::removeFromCart($nid);
       }
     }
@@ -170,16 +177,16 @@ class CartController extends ControllerBase {
     $cart = $utility::getCart();
     if (isset($cart['cart']) && !empty($cart['cart'])) {
       $type = NodeType::load("basic_cart_order");
-      $node = $this->entityTypeManager()->getStorage('node')->create(array(
+      $node = $this->entityTypeManager()->getStorage('node')->create([
         'type' => $type->id(),
-      ));
+      ]);
 
       $node_create_form = $this->entityFormBuilder()->getForm($node);
 
-      return array(
+      return [
         '#type' => 'markup',
         '#markup' => render($node_create_form),
-      );
+      ];
     }
     else {
 
@@ -196,16 +203,16 @@ class CartController extends ControllerBase {
    */
   public function orderCreate() {
     $type = NodeType::load("basic_cart_order");
-    $node = $this->entityTypeManager()->getStorage('node')->create(array(
+    $node = $this->entityTypeManager()->getStorage('node')->create([
       'type' => $type->id(),
-    ));
+    ]);
 
     $node_create_form = $this->entityFormBuilder()->getForm($node);
 
-    return array(
+    return [
       '#type' => 'markup',
       '#markup' => render($node_create_form),
-    );
+    ];
   }
 
   /**
@@ -249,11 +256,11 @@ class CartController extends ControllerBase {
   public function thankYouPage() {
     $utility = new Utility();
     $config = $utility->checkoutSettings();
-    return array(
+    return [
       '#type' => 'markup',
       '#theme' => 'basic_cart_thank_you',
       '#basic_cart' => ['title' => $config->get('thankyou')['title'], 'text' => $config->get('thankyou')['text']],
-    );
+    ];
   }
 
 }

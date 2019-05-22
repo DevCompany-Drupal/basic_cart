@@ -31,10 +31,10 @@ class CartStorage {
         ->execute();
     }
     catch (\Exception $e) {
-      \Drupal::messenger()->addError(t('db_insert failed. Message = %message, query= %query', array(
+      \Drupal::messenger()->addError(t('db_insert failed. Message = %message, query= %query', [
         '%message' => $e->getMessage(),
         '%query' => $e->query_string,
-      )
+      ]
       ), 'error');
     }
     return $return_value;
@@ -62,10 +62,10 @@ class CartStorage {
         ->execute();
     }
     catch (\Exception $e) {
-      \Drupal::messenger()->addError(t('db_update failed. Message = %message, query= %query', array(
+      \Drupal::messenger()->addError(t('db_update failed. Message = %message, query= %query', [
         '%message' => $e->getMessage(),
         '%query' => $e->query_string,
-      )
+      ]
       ), 'error');
     }
     return $count;
@@ -107,7 +107,7 @@ class CartStorage {
    * @see http://drupal.org/node/310072
    * @see http://drupal.org/node/310075
    */
-  public static function load(array $entry = array()) {
+  public static function load(array $entry = []) {
     // Read all fields from the dbtng_example table.
     $select = \Drupal::database()->select(self::TABLE, 'cart');
     $select->fields('cart');

@@ -16,68 +16,68 @@
  */
 function basic_cart_schema() {
 
-  $schema['basic_cart_order_connect'] = array(
+  $schema['basic_cart_order_connect'] = [
     'description' => 'Basic cart order registration table.',
-    'fields' => array(
-      'oid' => array(
+    'fields' => [
+      'oid' => [
         'description' => 'The primary identifier for an order.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
-      ),
-      'id' => array(
+      ],
+      'id' => [
         'description' => 'Order node.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
-      ),
-      'entitytype' => array(
+      ],
+      'entitytype' => [
         'description' => 'Entity Type',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => 'node',
-      ),
-      'quantity' => array(
+      ],
+      'quantity' => [
         'description' => 'Order node quantity.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
-      ),
-    ),
-    'primary key' => array('oid', 'id'),
-  );
+      ],
+    ],
+    'primary key' => ['oid', 'id'],
+  ];
 
-  $schema['basic_cart_cart'] = array(
+  $schema['basic_cart_cart'] = [
     'description' => 'Basic cart store table.',
-    'fields' => array(
-      'uid' => array(
+    'fields' => [
+      'uid' => [
         'description' => 'The primary identifier for an order.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
-      ),
-      'id' => array(
+      ],
+      'id' => [
         'description' => 'EntityId',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
-      ),
-      'entitytype' => array(
+      ],
+      'entitytype' => [
         'description' => 'Entity Type',
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
         'default' => 'node',
-      ),
-      'quantity' => array(
+      ],
+      'quantity' => [
         'description' => 'Order node quantity.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
-      ),
-    ),
-    'primary key' => array('uid', 'id'),
-  );
+      ],
+    ],
+    'primary key' => ['uid', 'id'],
+  ];
   return $schema;
 }

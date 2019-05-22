@@ -27,7 +27,7 @@ class CartStorageSelect {
 
       default:
         $cartStorage = new CartStorage();
-        $this->cart  = new CartTable($cartStorage, $user);
+        $this->cart = new CartTable($cartStorage, $user);
         break;
     }
   }
@@ -79,7 +79,7 @@ class CartStorageSelect {
    * @return string
    *   Message
    */
-  public  function addToCart($id, array $params = array()) {
+  public  function addToCart($id, array $params = []) {
     return $this->cart->addToCart($id, $params);
   }
 

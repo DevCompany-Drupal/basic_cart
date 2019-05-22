@@ -3,5 +3,3 @@ Patches applied to this directory:
 
 Fix Basic cart module
 Source: ./patches/basic_cart/basic_cart_fix_08_05_2019.patch
-
-

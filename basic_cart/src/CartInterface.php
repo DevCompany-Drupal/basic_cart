@@ -36,6 +36,6 @@ interface CartInterface {
    * @param array $params
    *   Array to define quantity and entity type.
    */
-  public function addToCart($id, array $params = array());
+  public function addToCart($id, array $params = []);
 
 }

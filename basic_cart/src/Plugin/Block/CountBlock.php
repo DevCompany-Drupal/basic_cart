@@ -23,11 +23,11 @@ class CountBlock extends BlockBase {
   public function build() {
 
     $config = $this->getConfiguration();
-    $render = array(
+    $render = [
       '#theme' => 'basic_cart_count_block',
       '#cartcount' => Utility::cartCount(),
-      '#cache' => array('max-age' => 0),
-    );
+      '#cache' => ['max-age' => 0],
+    ];
     if ($config['float']) {
       $render['#float'] = Html::escape($config['float']);
     }
@@ -64,7 +64,7 @@ class CountBlock extends BlockBase {
 
     $config = $this->getConfiguration();
 
-    $form['size'] = array(
+    $form['size'] = [
       '#type' => 'select',
       '#options' => [
         '32x26' => '32x26',
@@ -75,43 +75,43 @@ class CountBlock extends BlockBase {
       '#title' => $this->t('Cart Icon Size'),
       '#description' => $this->t('Cart icon size'),
       '#default_value' => isset($config['size']) ? $config['size'] : '48x29',
-    );
+    ];
 
-    $form['float'] = array(
+    $form['float'] = [
       '#type' => 'select',
       '#options' => ['none' => 'none', 'right' => 'right', 'left' => 'left'],
       '#title' => $this->t('Float'),
       '#description' => $this->t('Cart icon floated to right or left'),
       '#default_value' => isset($config['float']) ? $config['float'] : '',
-    );
-    $form['top'] = array(
+    ];
+    $form['top'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Top'),
       '#description' => $this->t('Top positon value in pixel'),
       '#default_value' => isset($config['top']) ? $config['top'] : '',
       '#size' => 3,
-    );
-    $form['bottom'] = array(
+    ];
+    $form['bottom'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Bottom'),
       '#description' => $this->t('Bottom positon value in pixel'),
       '#default_value' => isset($config['bottom']) ? $config['bottom'] : '',
       '#size' => 3,
-    );
-    $form['left'] = array(
+    ];
+    $form['left'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Left'),
       '#description' => $this->t('Left positon value in pixel'),
       '#default_value' => isset($config['left']) ? $config['left'] : '',
       '#size' => 3,
-    );
-    $form['right'] = array(
+    ];
+    $form['right'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Right'),
       '#description' => $this->t('Right positon value in pixel'),
       '#default_value' => isset($config['right']) ? $config['right'] : '',
       '#size' => 3,
-    );
+    ];
     return $form;
   }
 
