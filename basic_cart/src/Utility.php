@@ -94,7 +94,7 @@ class Utility extends Settings {
    * @param array $params
    *   Quantity and entity types.
    */
-  public static function addToCart($id, array $params = array()) {
+  public static function addToCart($id, array $params = []) {
     $storage = static::getStorage();
     $storage->addToCart($id, $params);
   }
@@ -128,11 +128,11 @@ class Utility extends Settings {
     $fields['bundle_types'] = $bundles;
     if ($type == self::FIELD_ORDERCONNECT) {
 
-      $fields['bundle_types'] = array(
+      $fields['bundle_types'] = [
         'basic_cart_order' => 'basic_cart_order',
-      );
-      $fields['fields'] = array(
-        'basic_cart_content' => array(
+      ];
+      $fields['fields'] = [
+        'basic_cart_content' => [
           'type' => 'entity_reference_quantity',
           'entity_type' => 'node',
           'bundle' => 'basic_cart_order',
@@ -141,32 +141,32 @@ class Utility extends Settings {
           'required' => FALSE,
           'description' => t('Basic cart reference content'),
           'cardinality' => -1,
-          'formatter' => array(
-            'default' => array(
+          'formatter' => [
+            'default' => [
               'label' => 'inline',
               'type' => 'entity_reference_quantity_label',
               'settings' => ['view_mode' => 'basic_cart_order'],
-            ),
+            ],
             'search_result' => 'default',
             'teaser' => 'default',
-          ),
-          'widget' => array(
+          ],
+          'widget' => [
             'type' => 'entity_reference_quantity_autocomplete',
             'cardinality' => -1,
-          ),
-          'settings' => array(
+          ],
+          'settings' => [
             'handler' => 'default:node',
-            'handler_settings' => array(
+            'handler_settings' => [
               "target_bundles" => $bundles,
-            ),
-          ),
+            ],
+          ],
 
-        ),
-      );
+        ],
+      ];
     }
     else {
-      $fields['fields'] = array(
-        'add_to_cart_price' => array(
+      $fields['fields'] = [
+        'add_to_cart_price' => [
           'type' => 'decimal',
           'entity_type' => 'node',
           'title' => t($config->get('price_label')),
@@ -174,17 +174,17 @@ class Utility extends Settings {
           'required' => FALSE,
           'description' => t("Please enter this item's price."),
           'cardinality' => 1,
-          'widget' => array('type' => 'number'),
-          'formatter' => array(
-            'default' => array(
+          'widget' => ['type' => 'number'],
+          'formatter' => [
+            'default' => [
               'label' => 'inline',
               'type' => 'number_decimal',
               'weight' => 11,
-            ), 'search_result' => 'default',
+            ], 'search_result' => 'default',
             'teaser' => 'default',
-          ),
-        ),
-        'add_to_cart' => array(
+          ],
+        ],
+        'add_to_cart' => [
           'type' => 'addtocart',
           'entity_type' => 'node',
           'title' => t($config->get('add_to_cart_button')),
@@ -192,25 +192,25 @@ class Utility extends Settings {
           'required' => FALSE,
           'description' => 'Enable add to cart button',
           'cardinality' => 1,
-          'widget' => array('type' => 'addtocart'),
-          'formatter' => array(
-            'default' => array(
+          'widget' => ['type' => 'addtocart'],
+          'formatter' => [
+            'default' => [
               'label' => 'hidden',
               'weight' => 11,
               'type' => $config->get('quantity_status') ? 'addtocartwithquantity' : 'addtocart',
-            ), 'search_result' => array(
+            ], 'search_result' => [
               'label' => 'hidden',
               'weight' => 11,
               'type' => 'addtocart',
-            ), 'teaser' => array(
+            ], 'teaser' => [
               'label' => 'hidden',
               'weight' => 11,
               'type' => 'addtocart',
-            ),
-          ),
+            ],
+          ],
 
-        ),
-      );
+        ],
+      ];
 
     }
     return (object) $fields;
@@ -230,12 +230,12 @@ class Utility extends Settings {
     foreach ($fields->fields as $field_name => $config) {
       $field_storage = FieldStorageConfig::loadByName($config['entity_type'], $field_name);
       if (empty($field_storage)) {
-        FieldStorageConfig::create(array(
+        FieldStorageConfig::create([
           'field_name' => $field_name,
           'entity_type' => $config['entity_type'],
           'type' => $config['type'],
           'cardinality' => $config['cardinality'],
-        ))->save();
+        ])->save();
       }
     }
     foreach ($fields->bundle_types as $bundle) {
@@ -251,14 +251,14 @@ class Utility extends Settings {
       }
 
       foreach ($fields->fields as $field_name => $config) {
-        $config_array = array(
+        $config_array = [
           'field_name' => $field_name,
           'entity_type' => $config['entity_type'],
           'bundle' => $bundle,
           'label' => $config['label'],
           'required' => $config['required'],
           'cardinality' => $config['cardinality'],
-        );
+        ];
 
         if (isset($config['settings'])) {
           $config_array['settings'] = $config['settings'];
@@ -319,7 +319,7 @@ class Utility extends Settings {
       }
     }
   }
-  
+
   /**
    * Remove Fields from content types.
    */
@@ -367,11 +367,11 @@ class Utility extends Settings {
   public static function getCartData() {
     $config = self::cartSettings();
     $cart = self::getCart();
-    //$quantity_enabled = $config->get('quantity_status');
+    // $quantity_enabled = $config->get('quantity_status');.
     $total_price = self::getTotalPrice();
-    $cart_cart = isset($cart['cart']) ? $cart['cart'] : array();
+    $cart_cart = isset($cart['cart']) ? $cart['cart'] : [];
 
-    $basic_cart = array();
+    $basic_cart = [];
     $basic_cart['config']['quantity_enabled'] = $config->get('quantity_status');
     $basic_cart['empty']['text'] = $config->get('empty_cart');
 
@@ -421,13 +421,13 @@ class Utility extends Settings {
     $vat_is_enabled = (int) $config->get('vat_state');
     $vat_value = !empty($vat_is_enabled) && $vat_is_enabled ? Utility::formatPrice($price->vat) : 0;
 
-    $basic_cart = array(
+    $basic_cart = [
       'total_price' => $total,
       'vat_enabled' => $vat_is_enabled,
       'vat_value' => $vat_value,
       'total_price_label' => $config->get('total_price_label'),
       'total_vat_label' => 'Total VAT',
-    );
+    ];
     return $basic_cart;
   }
 
@@ -441,11 +441,11 @@ class Utility extends Settings {
    */
   public static function quantityPrefixData($nid) {
     global $base_url;
-    $url = new Url('basic_cart.cartremove', array("nid" => $nid));
-    $url_plus = new Url('basic_cart.plus_item', array("nid" => $nid));
-    $url_min = new Url('basic_cart.min_item', array("nid" => $nid));
+    $url = new Url('basic_cart.cartremove', ["nid" => $nid]);
+    $url_plus = new Url('basic_cart.plus_item', ["nid" => $nid]);
+    $url_min = new Url('basic_cart.min_item', ["nid" => $nid]);
     $cart = Utility::getCart($nid);
-    $basic_cart = array();
+    $basic_cart = [];
     $basic_cart['delete_url'] = $url->toString();
     $basic_cart['plus_url'] = $url_plus->toString();
     $basic_cart['min_url'] = $url_min->toString();
@@ -459,7 +459,7 @@ class Utility extends Settings {
       $unit_price = isset($unit_price[0]['value']) ? $unit_price[0]['value'] : 0;
       $title = $cart['cart']->getTranslation($langcode)->get('title')->getValue()[0]['value'];
       // Price and currency.
-      $url = new Url('entity.node.canonical', array("node" => $nid));
+      $url = new Url('entity.node.canonical', ["node" => $nid]);
       $link = new Link($title, $url);
       $unit_price = isset($unit_price) ? $unit_price : 0;
       $unit_price = Utility::formatPrice($unit_price);

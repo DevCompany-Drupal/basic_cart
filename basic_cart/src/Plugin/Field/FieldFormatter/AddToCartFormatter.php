@@ -26,12 +26,12 @@ class AddToCartFormatter extends FormatterBase {
    * {@inheritdoc}
    */
   public static function defaultSettings() {
-    return array(
+    return [
       'addtocart_wrapper_container_class' => '',
       'addtocart_button_container_class' => '',
       'addtocart_button_class' => '',
       'addtocart_message_wrapper_class' => '',
-    ) + parent::defaultSettings();
+    ] + parent::defaultSettings();
   }
 
   /**
@@ -46,7 +46,7 @@ class AddToCartFormatter extends FormatterBase {
       $addtocart_message_wrapper_class = Html::escape($this->getSetting('addtocart_message_wrapper_class'))->__toString();
 
       $config = \Drupal::config('basic_cart.settings');
-      $elements = array();
+      $elements = [];
       $option = [
         'query' => ['entitytype' => $entity->getEntityTypeId(), 'quantity' => ''],
         'absolute' => TRUE,
@@ -78,27 +78,27 @@ class AddToCartFormatter extends FormatterBase {
    */
   public function settingsForm(array $form, FormStateInterface $form_state) {
 
-    $element = array();
-    $element['addtocart_wrapper_container_class'] = array(
+    $element = [];
+    $element['addtocart_wrapper_container_class'] = [
       '#type' => 'textfield',
       '#title' => t('Add to cart wrapper class (css)'),
       '#default_value' => $this->getSetting('addtocart_wrapper_container_class'),
-    );
-    $element['addtocart_button_container_class'] = array(
+    ];
+    $element['addtocart_button_container_class'] = [
       '#type' => 'textfield',
       '#title' => t('Add to cart button container class (css)'),
       '#default_value' => $this->getSetting('addtocart_button_container_class'),
-    );
-    $element['addtocart_button_class'] = array(
+    ];
+    $element['addtocart_button_class'] = [
       '#type' => 'textfield',
       '#title' => t('Add to cart button class (css)'),
       '#default_value' => $this->getSetting('addtocart_button_class'),
-    );
-    $element['addtocart_message_wrapper_class'] = array(
+    ];
+    $element['addtocart_message_wrapper_class'] = [
       '#type' => 'textfield',
       '#title' => t('Add to cart button class (css)'),
       '#default_value' => $this->getSetting('addtocart_message_wrapper_class'),
-    );
+    ];
     return $element;
   }
 

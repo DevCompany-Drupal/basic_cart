@@ -32,34 +32,34 @@ class CartForm extends FormBase {
     $config = Utility::cartSettings();
 
     // And now the form.
-    $form['cartcontents'] = array(
+    $form['cartcontents'] = [
       // Make the returned array come back in tree form.
       '#tree' => TRUE,
-    );
+    ];
     // Cart elements.
     foreach ($cart['cart_quantity'] as $nid => $quantity) {
       $variable = Utility::quantityPrefixData($nid);
 
-      $form['cartcontents'][$nid] = array(
+      $form['cartcontents'][$nid] = [
         '#type' => $config->get('quantity_status') ? 'textfield' : 'markup',
         '#size' => 2,
         '#quantity_id'  => $nid,
         "#suffix" => Utility::render('basic-cart-quantity-suffix.html.twig', $variable),
         "#prefix" => Utility::render('basic-cart-quantity-prefix.html.twig', $variable),
         '#default_value' => $quantity,
-      );
+      ];
     }
-    $form['total_price'] = array(
+    $form['total_price'] = [
       '#markup' => Utility::render('total-price-markup.html.twig', Utility::getTotalPriceMarkupData()),
-    );
+    ];
 
     // Buttons.
-    $form['buttons'] = array(
+    $form['buttons'] = [
       '#tree' => TRUE,
-    );
+    ];
 
     if ($config->get('order_status')) {
-      $form['buttons']['checkout'] = array(
+      $form['buttons']['checkout'] = [
         '#type' => 'link',
         '#title' => $this->t('Checkout'),
         '#url' => Url::fromRoute('basic_cart.checkout'),
@@ -70,7 +70,7 @@ class CartForm extends FormBase {
             'width' => 700,
           ]),
         ],
-      );
+      ];
     }
 
     return $form;

@@ -104,17 +104,17 @@ class Settings {
   public static function listPriceFormats() {
     $config = self::cartSettings();
     $currency = $config->get('currency');
-    return array(
-      0 => t('1 234,00 @currency', array('@currency' => $currency)),
-      1 => t('1 234.00 @currency', array('@currency' => $currency)),
-      2 => t('1,234.00 @currency', array('@currency' => $currency)),
-      3 => t('1.234,00 @currency', array('@currency' => $currency)),
+    return [
+      0 => t('1 234,00 @currency', ['@currency' => $currency]),
+      1 => t('1 234.00 @currency', ['@currency' => $currency]),
+      2 => t('1,234.00 @currency', ['@currency' => $currency]),
+      3 => t('1.234,00 @currency', ['@currency' => $currency]),
 
-      4 => t('@currency 1 234,00', array('@currency' => $currency)),
-      5 => t('@currency 1 234.00', array('@currency' => $currency)),
-      6 => t('@currency 1,234.00', array('@currency' => $currency)),
-      7 => t('@currency 1.234,00', array('@currency' => $currency)),
-    );
+      4 => t('@currency 1 234,00', ['@currency' => $currency]),
+      5 => t('@currency 1 234.00', ['@currency' => $currency]),
+      6 => t('@currency 1,234.00', ['@currency' => $currency]),
+      7 => t('@currency 1.234,00', ['@currency' => $currency]),
+    ];
   }
 
   /**
@@ -127,11 +127,11 @@ class Settings {
 
     $config = self::cartSettings();
     // Building the return array.
-    $return = array(
+    $return = [
       'price' => 0,
       'vat' => 0,
       'total' => 0,
-    );
+    ];
     $cart = static::getCart();
 
     if (empty($cart)) {

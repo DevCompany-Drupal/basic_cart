@@ -28,21 +28,23 @@ class CartBlock extends BlockBase {
         '#type' => 'markup',
         '#title' => $config->get('cart_block_title'),
         '#markup' => Utility::render(),
-        '#cache' => array('max-age' => 0),
+        '#cache' => ['max-age' => 0],
       ],
       [
         '#type' => 'link',
         '#title' => $config->get('cart_block_title'),
         '#url' => Url::fromRoute('basic_cart.cart'),
-        '#options' => ['attributes' => [
-          'class' => ['use-ajax', 'button'],
-          'data-dialog-type' => 'modal',
-          'data-dialog-options' => Json::encode([
-            'width' => 700,
-          ]),
-        ]],
+        '#options' => [
+          'attributes' => [
+            'class' => ['use-ajax', 'button'],
+            'data-dialog-type' => 'modal',
+            'data-dialog-options' => Json::encode([
+              'width' => 700,
+            ]),
+          ],
+        ],
         '#attached' => ['library' => ['core/drupal.dialog.ajax']],
-      ]
+      ],
     ];
 
   }

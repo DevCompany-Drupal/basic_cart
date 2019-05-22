@@ -38,19 +38,18 @@ class CartSettingsForm extends ConfigFormBase {
       return NULL;
     }
 
-    if(trim($config->get('placeorder_button_name'))==""){  
-    
-                $this->config('basic_cart.settings')
-      ->set('placeorder_button_name','Place Order')->save();
+    if (trim($config->get('placeorder_button_name')) == "") {
+
+      $this->config('basic_cart.settings')
+        ->set('placeorder_button_name', 'Place Order')->save();
     }
-    if($config->get('cart_button_name')==""){
-     $this->config('basic_cart.settings')
-      ->set('cart_button_name','Checkout')->save();
-        
+    if ($config->get('cart_button_name') == "") {
+      $this->config('basic_cart.settings')
+        ->set('cart_button_name', 'Checkout')->save();
+
     }
 
-    
-    $options = array();
+    $options = [];
     foreach ($node_types as $node_type => $type) {
       if ($node_type == 'basic_cart_order' || $node_type == 'basic_cart_connect') {
         continue;
@@ -58,225 +57,225 @@ class CartSettingsForm extends ConfigFormBase {
       $options[$node_type] = $type->get('name');
     }
 
-    $form['content_type'] = array(
+    $form['content_type'] = [
       '#title' => t('Content type selection'),
       '#type' => 'fieldset',
       '#description' => t('Please select the content types for which you wish to have the "Add to cart" option.'),
-    );
+    ];
 
-    $form['content_type']['basic_cart_content_types'] = array(
+    $form['content_type']['basic_cart_content_types'] = [
       '#title' => t('Content types'),
       '#type' => 'checkboxes',
       '#options' => $options,
       '#default_value' => $config->get('content_type'),
-    );
+    ];
 
-    $form['content_type']['basic_cart_all_content_types'] = array(
+    $form['content_type']['basic_cart_all_content_types'] = [
       '#type' => 'hidden',
       '#default_value' => $config->get('content_type'),
-    );
+    ];
 
-    $form['table'] = array(
+    $form['table'] = [
       '#title' => t('Store cart data in database table'),
       '#type' => 'fieldset',
       '#description' => t('Enable cart to store the data in database instead of session. Data will persist only when user logged in'),
-    );
+    ];
 
-    $form['table']['basic_cart_use_cart_table'] = array(
+    $form['table']['basic_cart_use_cart_table'] = [
       '#title' => t('Persist cart data'),
       '#type' => 'checkbox',
       '#description' => t('This option will enable to persist cart data even the user is logged out and logging in again'),
       '#default_value' => $config->get('use_cart_table'),
-    );
+    ];
 
-    $form['currency'] = array(
+    $form['currency'] = [
       '#title' => t('Currency and price'),
       '#type' => 'fieldset',
       '#description' => t('Please select the currency in which the prices will be calculated.'),
-    );
+    ];
 
-    $form['currency']['basic_cart_currency_status'] = array(
+    $form['currency']['basic_cart_currency_status'] = [
       '#title' => t('Enable Currency'),
       '#type' => 'checkbox',
       '#description' => t('Enable Currency for your cart price,this will available only if price is enabled'),
       '#default_value' => $config->get('currency_status'),
-    );
+    ];
 
-    $form['currency']['basic_cart_currency'] = array(
+    $form['currency']['basic_cart_currency'] = [
       '#title' => t('Currency'),
       '#type' => 'textfield',
       '#description' => t("Please choose the currency."),
       '#default_value' => $config->get('currency'),
-    );
+    ];
 
-    $form['currency']['basic_cart_price_format'] = array(
+    $form['currency']['basic_cart_price_format'] = [
       '#title' => t('Price format'),
       '#type' => 'select',
       '#options' => Utility::listPriceFormats(),
       '#description' => t("Please choose the format in which the price will be shown."),
       '#default_value' => $config->get('price_format'),
-    );
+    ];
 
-    $form['currency']['basic_cart_quantity_status'] = array(
+    $form['currency']['basic_cart_quantity_status'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Enable quantity'),
       '#default_value' => $config->get('quantity_status'),
       '#description' => t('Enable quantity  for your cart, if quantity not enabled you can add to a cart without quantity'),
-    );
+    ];
 
-    $form['currency']['basic_cart_price_status'] = array(
+    $form['currency']['basic_cart_price_status'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Enable price'),
       '#default_value' => $config->get('price_status'),
       '#description' => t('Enable price for your cart, if price not enabled you can add to a cart without price'),
-    );
+    ];
 
-    $form['currency']['basic_cart_total_price_status'] = array(
+    $form['currency']['basic_cart_total_price_status'] = [
       '#type' => 'checkbox',
       '#title' => $this->t('Enable total price'),
       '#default_value' => $config->get('total_price_status'),
       '#description' => t('Enable total price for your cart, if total price is not enabled your cart would not have total price calcutaion'),
-    );
+    ];
 
-    $form['vat'] = array(
+    $form['vat'] = [
       '#title' => t('VAT'),
       '#type' => 'fieldset',
-    );
+    ];
 
-    $form['vat']['basic_cart_vat_state'] = array(
+    $form['vat']['basic_cart_vat_state'] = [
       '#title' => t('Check if you want to apply the VAT tax on the total amount in the checkout process.'),
       '#type' => 'checkbox',
       '#default_value' => $config->get('vat_state'),
-    );
+    ];
 
-    $form['vat']['basic_cart_vat_value'] = array(
+    $form['vat']['basic_cart_vat_value'] = [
       '#title' => t('VAT value'),
       '#type' => 'textfield',
       '#description' => t("Please enter VAT value."),
       '#field_suffix' => '%',
       '#size' => 10,
       '#default_value' => $config->get('vat_value'),
-    );
+    ];
 
-    $form['order'] = array(
+    $form['order'] = [
       '#title' => t('Basic Cart Order'),
       '#type' => 'fieldset',
-    );
+    ];
 
-    $form['order']['basic_cart_order_status'] = array(
+    $form['order']['basic_cart_order_status'] = [
       '#title' => t('Check if you want to create order for the cart.'),
       '#type' => 'checkbox',
       '#default_value' => $config->get('order_status'),
-    );
+    ];
 
-    $form['redirect'] = array(
+    $form['redirect'] = [
       '#title' => t('Redirect user after adding an item to the shopping cart'),
       '#type' => 'fieldset',
-    );
+    ];
 
-    $form['redirect']['basic_cart_add_to_cart_redirect'] = array(
+    $form['redirect']['basic_cart_add_to_cart_redirect'] = [
       '#title' => t('Add to cart redirect'),
       '#type' => 'textfield',
       '#description' => t("Enter the page you wish to redirect the customer to when an item is added to the cart, or &lt;none&gt; for no redirect."),
       '#default_value' => $config->get('add_to_cart_redirect'),
-    );
+    ];
 
-    $form['configure'] = array(
+    $form['configure'] = [
       '#title' => t('Configure texts'),
       '#type' => 'fieldset',
     // '#description' => t('Please configure text to be shown in your cart'),.
-    );
+    ];
 
-    $form['configure']['basic_cart_cart_page_title'] = array(
+    $form['configure']['basic_cart_cart_page_title'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Page title'),
       '#default_value' => $config->get('cart_page_title'),
       '#description' => t('Please configure page title to be shown in your cart page'),
-    );
+    ];
 
-    $form['configure']['basic_cart_empty_cart'] = array(
+    $form['configure']['basic_cart_empty_cart'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Empty Cart'),
       '#default_value' => $config->get('empty_cart'),
       '#description' => t('Please configure a text when your cart is empty'),
-    );
+    ];
 
-    $form['configure']['basic_cart_cart_block_title'] = array(
+    $form['configure']['basic_cart_cart_block_title'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Block Title'),
       '#default_value' => $config->get('cart_block_title'),
       '#description' => t('Please configure your cart block title'),
-    );
+    ];
 
-    $form['configure']['basic_cart_view_cart_button'] = array(
+    $form['configure']['basic_cart_view_cart_button'] = [
       '#type' => 'textfield',
       '#title' => $this->t('View cart'),
       '#default_value' => $config->get('view_cart_button'),
       '#description' => t('Please configure your text on view cart button'),
-    );
+    ];
 
-    $form['configure']['basic_cart_cart_update_button'] = array(
+    $form['configure']['basic_cart_cart_update_button'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Update cart button'),
       '#default_value' => $config->get('cart_update_button'),
       '#description' => t('Please configure your text on update cart button'),
-    );
+    ];
 
-    $form['configure']['basic_cart_cart_updated_message'] = array(
+    $form['configure']['basic_cart_cart_updated_message'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Cart updated message'),
       '#default_value' => $config->get('cart_updated_message'),
       '#description' => t('Please configure message to show after the cart updated'),
-    );
+    ];
 
-    $form['configure']['basic_cart_quantity_label'] = array(
+    $form['configure']['basic_cart_quantity_label'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Quantity label'),
       '#default_value' => $config->get('quantity_label'),
       '#description' => t('Please configure your text for quantity label,this will available only if quantity is enabled'),
-    );
+    ];
 
-    $form['configure']['basic_cart_price_label'] = array(
+    $form['configure']['basic_cart_price_label'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Price label'),
       '#default_value' => $config->get('price_label'),
       '#description' => t('Please configure your text for price label,this will available only if price is enabled'),
-    );
+    ];
 
-    $form['configure']['basic_cart_total_price_label'] = array(
+    $form['configure']['basic_cart_total_price_label'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Total price label'),
       '#default_value' => $config->get('total_price_label'),
       '#description' => t('Please configure your text for total price label,this will available only if total price is enabled'),
-    );
+    ];
 
-    $form['configure']['basic_cart_add_to_cart_button'] = array(
+    $form['configure']['basic_cart_add_to_cart_button'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Add to Cart'),
       '#default_value' => $config->get('add_to_cart_button'),
       '#description' => t('Please configure your text on update cart button'),
-    );
+    ];
 
-    $form['configure']['basic_cart_added_to_cart_message'] = array(
+    $form['configure']['basic_cart_added_to_cart_message'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Added to Cart'),
       '#default_value' => $config->get('added_to_cart_message'),
       '#description' => t('Please configure your text on to appear after the entity is added to cart'),
-    );
+    ];
 
-    $form['configure']['basic_cart_cart_button_name'] = array(
+    $form['configure']['basic_cart_cart_button_name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Basic Cart Button Name'),
       '#default_value' => $config->get('cart_button_name'),
       '#description' => t('Please configure your text on to appear On Checkout Form'),
-    );
+    ];
 
-    $form['configure']['basic_cart_placeorder_button_name'] = array(
+    $form['configure']['basic_cart_placeorder_button_name'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Basic Cart Placeorder Button Name'),
       '#default_value' => $config->get('placeorder_button_name'),
       '#description' => t('Please configure your text on to appear On Create Order Form'),
-    );
+    ];
     return parent::buildForm($form, $form_state);
   }
 

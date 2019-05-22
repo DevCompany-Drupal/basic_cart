@@ -77,6 +77,3 @@ basic_cart.settings:
   use_cart_table:
    type: integer
    label: 'Enable cart in table'
-        
-    
-    
