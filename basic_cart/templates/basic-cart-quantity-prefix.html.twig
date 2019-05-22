@@ -1,0 +1,28 @@
+{% if basic_cart.notempty %}
+<div class="basic_cart-cart-contents row">
+  <div class="basic_cart-delete-image cell">
+    <span class="basic_cart-delete-image-image">
+      <a href="{{ basic_cart.delete_url }}" class="use-ajax">
+        <img src="{{ basic_cart.module_url }}/images/delete.png"/>
+      </a>
+    </span>
+  </div>
+  <div class="basic_cart-cart-node-title cell">
+    {{ basic_cart.title_link }}<br/>
+  </div>
+  <div class="cell basic_cart-cart-unit-price">
+    <strong>{{ basic_cart.unit_price }}</strong>
+  </div>
+
+  <div class="basic_cart-cart-quantity cell">
+    <div class="basic_cart-plus-item cell">
+      <span class="basic_cart-plus-item-image">
+        <a href="{{ basic_cart.plus_url }}" class="use-ajax">
+          <img src="{{ basic_cart.module_url }}/images/plus.png"/>
+        </a>
+      </span>
+    </div>
+    <div class="cell-quantity-{{ basic_cart.node_id }} cell">
+      {% endif %}
+
+  
